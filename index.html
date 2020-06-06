@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lawan Corona</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <h1>LawanCorona Game</h1>
+        <div class="divider"></div>
+        <div class="canvas">
+            <canvas id="canvas" width="800" height="800"></canvas>
+        </div>
+        <div id="alert">Selamat, kamu berhasil mengalahkan virus corona!</div>
+    </div>
+    <script src="js/LawanCorona.js"></script>
+    <script>
+        const lawanCorona = new LawanCorona({
+            el: 'canvas'
+        });
+        lawanCorona.start();
+    </script>
+</body>
+</html>
