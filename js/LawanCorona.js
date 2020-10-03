@@ -1,3 +1,6 @@
+const workersSupported = (typeof Worker !== "undefined");
+const isInWebWorker = (typeof document === "undefined");
+
 /**
  * LawanCorona Class game by Ahmad Saugi
  */
@@ -10,16 +13,26 @@ class LawanCorona {
     static PLAYING_STATE = 'playing'
 
     constructor({el}) {
-        this.canvas = document.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
         this.numRow = 5;
         this.numColumn = 5;
         this.blocks = [];
         this.turn = LawanCorona.PLAYER_TAG;
         this.gameStatus = LawanCorona.PLAYING_STATE;
-
-        // Event Listener
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
+        
+        if(!isInWebWorker && workersSupported) {
+            this.botWorker = new Worker('/js/LawanCorona.js');
+            this.canvas = document.getElementById('canvas');
+            this.ctx = this.canvas.getContext('2d');
+            // Event Listener
+            this.canvas.addEventListener('click', (e) => this.handleClick(e));
+            this.botWorker.onmessage = (e) => {
+                if(e.data) {
+                  const blockChoosed = e.data;
+                  this.blocks[blockChoosed.index].status = LawanCorona.BOT_TAG;
+                  this.turn = LawanCorona.PLAYER_TAG;
+                }
+            }
+        }
     }
 
     /**
@@ -76,15 +89,15 @@ class LawanCorona {
     }
 
     update() {
-        this._checkWin(this.blocks, this.win.bind(this))
+        LawanCorona._checkWin(this.blocks, this.win.bind(this))
     }
 
-    _checkWin(blocks, callback) {
+    static _checkWin(blocks, callback) {
       let kananBawahIndexes = [0, 1, 5, 6];
       let kiriBawahIndexes = [3, 4, 8, 9];
       blocks.forEach((block,index) => {
         // Check Horizontal and Vertical
-        if ((index + 1) % 5 < 5) {
+        if ((index + 1) % 5 < 3) {
             if(blocks[index].status !== null &&
                 blocks.length >= 1 + index+1+1+1 &&
                 blocks[index].status == blocks[index+1].status &&
@@ -168,7 +181,6 @@ class LawanCorona {
                 this.turn = LawanCorona.BOT_TAG;
                 setTimeout(() => {
                     this.botMove();
-                    this.turn = LawanCorona.PLAYER_TAG
                 }, 500);
             }
         }
@@ -177,21 +189,24 @@ class LawanCorona {
     botMove() {
         // let blocksAvailable = this.blocks.filter((block) => block.status == null);
         // let blockChoosed = this.getRandomArray(blocksAvailable);
-        let blockChoosed = this._minimax(this.blocks, 4, LawanCorona.BOT_TAG, LawanCorona.PLAYER_TAG, true)
-        
-        this.blocks[blockChoosed.index].status = LawanCorona.BOT_TAG;
-        return true;
+        if (workersSupported && !isInWebWorker) {
+          this.botWorker.postMessage([this.blocks, 3, LawanCorona.BOT_TAG, LawanCorona.PLAYER_TAG, true]);
+        } else {
+            let blockChoosed = LawanCorona._minimax(this.blocks, 2, LawanCorona.BOT_TAG, LawanCorona.PLAYER_TAG, true)
+            this.blocks[blockChoosed.index].status = LawanCorona.BOT_TAG;
+            this.turn = LawanCorona.PLAYER_TAG
+        }
     }
 
     // node is a board
-    _minimax(node, depth, a_player, b_player, a_maximize){
+    static _minimax(node, depth, a_player, b_player, a_maximize){
       const blocksAvailable = node.filter((block) => block.status == null); 
       const scoreMoves = new Array(blocksAvailable.length);
       let bestMove;
 
       if (depth === 0 || blocksAvailable.length === 0) {
         let score = 0
-        this._checkWin(node, function (who) {
+        LawanCorona._checkWin(node, function (who) {
           if(who === a_player) {
             score = a_maximize ? 10 : -10
           } else if(who === b_player ) {
@@ -208,7 +223,7 @@ class LawanCorona {
         moves[pos].status = a_player
         scoreMoves[index] = block
         
-        let result = this._minimax(moves, depth - 1, b_player, a_player, !a_maximize);
+        let result = LawanCorona._minimax(moves, depth - 1, b_player, a_player, !a_maximize);
         scoreMoves[index].score = result.score
       })
 
@@ -258,3 +273,11 @@ class LawanCorona {
     }
 
 }
+
+self.onmessage = function(e) {
+  if(e.data) {
+    const move = LawanCorona._minimax(e.data[0], e.data[1], e.data[2], e.data[3], e.data[4])
+    self.postMessage(move);
+  }
+}
+self.postMessage(false)

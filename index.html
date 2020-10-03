@@ -17,10 +17,12 @@
     </div>
     <script src="js/LawanCorona.js"></script>
     <script>
-        const lawanCorona = new LawanCorona({
-            el: 'canvas'
-        });
-        lawanCorona.start();
+        (function() {
+            const lawanCorona = new LawanCorona({
+                el: 'canvas'
+            });
+            lawanCorona.start();
+        })();
     </script>
 </body>
 </html>
