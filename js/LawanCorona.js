@@ -3,14 +3,20 @@
  */
 
 class LawanCorona {
+    static PLAYER_TAG = 'player'
+    static BOT_TAG ='bot'
+    static WIN_STATE = 'win'
+    static LOSE_STATE = 'lose'
+    static PLAYING_STATE = 'playing'
+
     constructor({el}) {
         this.canvas = document.getElementById('canvas');
         this.ctx = this.canvas.getContext('2d');
         this.numRow = 5;
         this.numColumn = 5;
         this.blocks = [];
-        this.turn = "player";
-        this.gameStatus = "playing";
+        this.turn = LawanCorona.PLAYER_TAG;
+        this.gameStatus = LawanCorona.PLAYING_STATE;
 
         // Event Listener
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
@@ -57,11 +63,11 @@ class LawanCorona {
             this.ctx.rect(block.x, block.y, block.w, block.h);
             this.ctx.stroke();
 
-            if (block.status == 'player') {
+            if (block.status == LawanCorona.PLAYER_TAG) {
                 let image = new Image;
                 image.src = "images/player.png";
                 this.ctx.drawImage(image, block.x, block.y, block.w, block.h);
-            } else if (block.status == 'bot') {
+            } else if (block.status == LawanCorona.BOT_TAG) {
                 let image = new Image;
                 image.src = "images/opponent.png";
                 this.ctx.drawImage(image, block.x, block.y, block.w, block.h);
@@ -70,53 +76,61 @@ class LawanCorona {
     }
 
     update() {
-        let kananBawahIndexes = [0, 1, 5, 6];
-        let kiriBawahIndexes = [3, 4, 8, 9];
-        this.blocks.forEach((block,index) => {
-            // Check Horizontal and Vertical
-            if ((index + 1) % 5 == 1 || (index + 1) % 5 == 2) {
-                if(this.blocks[index].status !== null &&
-                    this.blocks[index].status == this.blocks[index+1].status &&
-                    this.blocks[index+1].status == this.blocks[index+1+1].status &&
-                    this.blocks[index+1+1].status == this.blocks[index+1+1+1].status) {
-                        this.win(this.blocks[index].status, [index, index+1, index+1+1, index+1+1+1]);
-                    }
-                else if(this.blocks[index].status !== null &&
-                    this.blocks[index + 5] !== undefined &&
-                    this.blocks[index].status == this.blocks[index+5].status &&
-                    this.blocks[index+5].status == this.blocks[index+5+5].status &&
-                    this.blocks[index+5+5].status == this.blocks[index+5+5+5].status) {
-                        this.win(this.blocks[index].status, [index, index+5, index+5+5, index+5+5+5]);
-                    }
-            }
+        this._checkWin(this.blocks, this.win.bind(this))
+    }
 
-            // Check kanan bawah
-            if(kananBawahIndexes.includes(index)) {
-                if (this.blocks[index].status !== null &&
-                    this.blocks[index].status == this.blocks[index + 6].status &&
-                    this.blocks[index + 6].status == this.blocks[index + 6 + 6].status &&
-                    this.blocks[index + 6 + 6].status == this.blocks[index + 6 + 6 + 6].status) {
-                        this.win(this.blocks[index].status, [index, index + 6, index + 6 + 6, index + 6 + 6 + 6]);
+    _checkWin(blocks, callback) {
+      let kananBawahIndexes = [0, 1, 5, 6];
+      let kiriBawahIndexes = [3, 4, 8, 9];
+      blocks.forEach((block,index) => {
+        // Check Horizontal and Vertical
+        if ((index + 1) % 5 < 5) {
+            if(blocks[index].status !== null &&
+                blocks.length >= 1 + index+1+1+1 &&
+                blocks[index].status == blocks[index+1].status &&
+                blocks[index+1].status == blocks[index+1+1].status &&
+                blocks[index+1+1].status == blocks[index+1+1+1].status) {
+                    callback(blocks[index].status, [index, index+1, index+1+1, index+1+1+1]);
                 }
-            }
+            else if(blocks[index].status !== null &&
+                blocks.length >= 1 + index+5+5+5 &&
+                blocks[index + 5] !== undefined &&
+                blocks[index].status == blocks[index+5].status &&
+                blocks[index+5].status == blocks[index+5+5].status &&
+                blocks[index+5+5].status == blocks[index+5+5+5].status) {
+                    callback(blocks[index].status, [index, index+5, index+5+5, index+5+5+5]);
+                }
+        }
 
-            // Check kiri bawah
-            if (kiriBawahIndexes.includes(index)) {
-                if (this.blocks[index].status !== null &&
-                    this.blocks[index].status == this.blocks[index + 4].status &&
-                    this.blocks[index + 4].status == this.blocks[index + 4 + 4].status &&
-                    this.blocks[index + 4 + 4].status == this.blocks[index + 4 + 4 + 4].status) {
-                    this.win(this.blocks[index].status, [index, index + 4, index + 4 + 4, index + 4 + 4 + 4]);
-                }
+        // Check kanan bawah
+        if(kananBawahIndexes.includes(index)) {
+            if (blocks[index].status !== null &&
+                blocks.length >= 1 + index + 6 + 6 + 6 &&
+                blocks[index].status == blocks[index + 6].status &&
+                blocks[index + 6].status == blocks[index + 6 + 6].status &&
+                blocks[index + 6 + 6].status == blocks[index + 6 + 6 + 6].status) {
+                    callback(blocks[index].status, [index, index + 6, index + 6 + 6, index + 6 + 6 + 6]);
             }
-        })
+        }
+
+        // Check kiri bawah
+        if (kiriBawahIndexes.includes(index)) {
+            if (blocks[index].status !== null &&
+                blocks.length >= 1 + index + 4 + 4 + 4 &&
+                blocks[index].status == blocks[index + 4].status &&
+                blocks[index + 4].status == blocks[index + 4 + 4].status &&
+                blocks[index + 4 + 4].status == blocks[index + 4 + 4 + 4].status) {
+                callback(blocks[index].status, [index, index + 4, index + 4 + 4, index + 4 + 4 + 4]);
+            }
+        }
+    })
     }
 
     render() {
         this.draw();
         this.update();
 
-        if(this.gameStatus == 'playing') {
+        if(this.gameStatus == LawanCorona.PLAYING_STATE) {
             requestAnimationFrame(() => this.render());
         }else{
             // Draw Result Board
@@ -132,39 +146,91 @@ class LawanCorona {
         indexes.forEach(index => {
             this.blocks[index].background = "rgba(241, 196, 15, .7)";
         })
-        this.gameStatus = 'win';
 
         // Show Popup
         let alertEl = document.getElementById('alert');
 
-        if(who == 'bot') {
+        if(who == LawanCorona.BOT_TAG) {
             alertEl.innerHTML = 'Yah, kamu belum berhasil. Coba kembali untuk meraih kemenangan dan akhiri pandemi ini!';
             alertEl.classList.add('show');
+            this.gameStatus = LawanCorona.LOSE_STATE;
         }else{
             alertEl.innerHTML = 'Selamat, kamu berhasil mengalahkan virus corona!';
             alertEl.classList.add('show');
+            this.gameStatus = LawanCorona.WIN_STATE;
         }
     }
 
     playerMove(index) {
-        if(this.turn == 'player') {
+        if(this.turn == LawanCorona.PLAYER_TAG) {
             if(this.blocks[index].status == null) {
-                this.blocks[index].status = 'player';
-                this.turn = 'bot';
+                this.blocks[index].status = LawanCorona.PLAYER_TAG;
+                this.turn = LawanCorona.BOT_TAG;
                 setTimeout(() => {
                     this.botMove();
-                    this.turn = 'player'
+                    this.turn = LawanCorona.PLAYER_TAG
                 }, 500);
             }
         }
     }
 
     botMove() {
-        let blocksAvailable = this.blocks.filter((block) => block.status == null);
-        let blockChoosed = this.getRandomArray(blocksAvailable);
+        // let blocksAvailable = this.blocks.filter((block) => block.status == null);
+        // let blockChoosed = this.getRandomArray(blocksAvailable);
+        let blockChoosed = this._minimax(this.blocks, 4, LawanCorona.BOT_TAG, LawanCorona.PLAYER_TAG, true)
         
-        this.blocks[blockChoosed.index].status = 'bot';
+        this.blocks[blockChoosed.index].status = LawanCorona.BOT_TAG;
         return true;
+    }
+
+    // node is a board
+    _minimax(node, depth, a_player, b_player, a_maximize){
+      const blocksAvailable = node.filter((block) => block.status == null); 
+      const scoreMoves = new Array(blocksAvailable.length);
+      let bestMove;
+
+      if (depth === 0 || blocksAvailable.length === 0) {
+        let score = 0
+        this._checkWin(node, function (who) {
+          if(who === a_player) {
+            score = a_maximize ? 10 : -10
+          } else if(who === b_player ) {
+            score = a_maximize ? -10 : 10
+          } else {
+            score = 0
+          }
+        })
+        return {score: score}
+      }
+      blocksAvailable.forEach((block, index) =>  {
+        const pos = node.indexOf(block)
+        const moves = JSON.parse(JSON.stringify(node)); // copy
+        moves[pos].status = a_player
+        scoreMoves[index] = block
+        
+        let result = this._minimax(moves, depth - 1, b_player, a_player, !a_maximize);
+        scoreMoves[index].score = result.score
+      })
+
+      if (a_maximize) {
+        var bestScore = -Infinity;
+        for (var i = 0; i < scoreMoves.length; i++) {
+            if (scoreMoves[i].score > bestScore) {
+                bestScore = scoreMoves[i].score;
+                bestMove = scoreMoves[i];
+            }
+        }
+      } else {
+          var bestScore = Infinity;
+          for (var i = 0; i < scoreMoves.length; i++) {
+              if (scoreMoves[i].score < bestScore) {
+                  bestScore = scoreMoves[i].score;
+                  bestMove = scoreMoves[i];
+              }
+          }
+      }
+
+      return bestMove
     }
 
     handleClick(e) {
